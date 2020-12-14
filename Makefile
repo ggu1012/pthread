@@ -1,5 +1,5 @@
 CC=g++
-CFLAG=-Wall -Wno-deprecated-declarations -O2 -g
+CFLAG=-Wall -Wno-deprecated-declarations -O2 -pg
 OPT=
 
 OS=$(shell uname)

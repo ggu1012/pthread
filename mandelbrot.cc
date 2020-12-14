@@ -26,7 +26,7 @@ void thread_exit(void) {
     // one thread has completed its job.
     rthread--;
     pthread_cond_signal(&cond);
-    pthread_mutex_unlock(&lock);
+    pthread_mutex_unlock(&lock);    
 }
 
 // This is called by the main thread.
