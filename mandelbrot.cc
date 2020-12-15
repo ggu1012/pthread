@@ -3,6 +3,7 @@
 #include <assert.h>
 #include <pthread.h>
 
+#include <cstring>
 #include <iostream>
 
 using namespace std;
@@ -26,13 +27,13 @@ void thread_exit(void) {
     // one thread has completed its job.
     rthread--;
     pthread_cond_signal(&cond);
-    pthread_mutex_unlock(&lock);    
+    pthread_mutex_unlock(&lock);
 }
 
 // This is called by the main thread.
 void thread_join(void) {
     pthread_mutex_lock(&lock);
-    // While loop until every thread has done their job.
+    // While loop until every thread has done their own job.
     while (rthread != 0)
         pthread_cond_wait(&cond, &lock);
     pthread_mutex_unlock(&lock);
@@ -43,6 +44,7 @@ void* thread_mandelbrot(void* arg) {
     // thread_num gets the value i from calc_mandelbrot,
     // which indicates the thread number.
     uint thread_num = *((uint*)arg);
+    uint calc_amount = num_ptr[thread_num];
 
     int start_point = 0;
     // find the start point for this thread by SUM(num[thread_before]) + 1
@@ -50,11 +52,15 @@ void* thread_mandelbrot(void* arg) {
         start_point += num_ptr[i];
     start_point++;
     // find the end point for this thread
-    int end_point = start_point + num_ptr[thread_num] - 1;
+    int end_point = start_point + calc_amount - 1;
 
     // for indicating pixel position
     uint W, H;
     float r, x;
+
+    pthread_mutex_lock(&lock);
+    cout << "thread num : " << thread_num << endl;
+    pthread_mutex_unlock(&lock);
 
     // iteration for calculating ma1ndelbrot set for [start_point, end_point]
     for (int now = start_point; now <= end_point; now++) {
@@ -70,17 +76,17 @@ void* thread_mandelbrot(void* arg) {
         int n = 0;
 
         // Two complex numbers for Z0 and Zn.
-        Complex* Z0 = new Complex(r, x);
-        Complex* Zn = new Complex(r, x);
+        Complex Z0 = Complex(r, x);
+        Complex Zn = Complex(r, x);
 
         // r + jx is the position for mandelbrot iteration.
         while (n <= max_iterations) {
             // Z(n+1) = Z(n)^2 + Z(0)
-            Zn[0] = Zn[0].operator*(Zn[0]);
-            Zn[0] = Zn[0].operator+(Z0[0]);
+            Zn = Zn.operator*(Zn);
+            Zn = Zn.operator+(Z0);
 
             // |Zn| > 2.0, out of bound
-            if (Zn[0].magnitude2() > 2.0)
+            if (Zn.magnitude2() > 2.0)
                 break;
             n++;
         }
@@ -151,18 +157,17 @@ void calc_mandelbrot(void) {
 
     // create threads with number of num_threads.
     pthread_t* threads = new pthread_t[num_threads];
+    int* tmp = new int[num_threads];
 
     // pass the value as pointer to avoid race.
-    int* tmp = new int[1];
     for (uint i = 0; i < num_threads; i++) {
-        *tmp = i;
-        assert(!pthread_create(&threads[i], NULL, &thread_mandelbrot, tmp));
-    }
-    delete tmp;
-
+        tmp[i] = i;
+        assert(!pthread_create(&threads[i], NULL, &thread_mandelbrot, &tmp[i]));        
+    }  
     thread_join();  // Check the condition variable.
 
-    // free threads
+    // free allocated regions
+    delete tmp;
     delete threads;
     delete num;
 
