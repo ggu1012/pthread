@@ -50,7 +50,6 @@ void* thread_mandelbrot(void* arg) {
     // find the start point for this thread by SUM(num[thread_before]) + 1
     for (uint i = 0; i < thread_num; i++)
         start_point += num_ptr[i];
-    start_point++;
     // find the end point for this thread
     int end_point = start_point + calc_amount - 1;
 
@@ -58,15 +57,11 @@ void* thread_mandelbrot(void* arg) {
     uint W, H;
     float r, x;
 
-    pthread_mutex_lock(&lock);
-    cout << "thread num : " << thread_num << endl;
-    pthread_mutex_unlock(&lock);
-
-    // iteration for calculating ma1ndelbrot set for [start_point, end_point]
-    for (int now = start_point; now <= end_point; now++) {
+    // iteration for calculating mandelbrot set for [start_point, end_point]
+    for (int now = start_point; now < end_point; now++) {
         // Convert the 1D element to (W, H), and to (r, x)
         // H = now / 768 + 1, W = now % 768
-        H = now / 768 + 1;
+        H = now / 768;
         W = now % 768;
         r = minW + 3.2 * W / 768;
         x = minH + 3.1 * H / 768;
@@ -84,11 +79,11 @@ void* thread_mandelbrot(void* arg) {
             // Z(n+1) = Z(n)^2 + Z(0)
             Zn = Zn.operator*(Zn);
             Zn = Zn.operator+(Z0);
-
-            // |Zn| > 2.0, out of bound
-            if (Zn.magnitude2() > 2.0)
-                break;
             n++;
+
+            // |Zn|^2 > 4.0, out of bound
+            if (Zn.magnitude2() > escape)
+                break;            
         }
 
         // save the iteration number

@@ -26,7 +26,7 @@ class Complex {
     float magnitude2() { return (r * r + i * i); }
     Complex operator*(const Complex &c) { return Complex(r * c.r - i * c.i, i * c.r + r * c.i); }
     Complex operator+(const Complex &c) { return Complex(r + c.r, i + c.i); }
-
+    
    private:
     float r, i;
 };
